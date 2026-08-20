@@ -1,0 +1,214 @@
+// Prisma Schema for Laraib Studio
+// Production-ready relational schema supporting SQLite (development) and PostgreSQL (production)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("ADMIN") // SUPER_ADMIN | ADMIN
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Category {
+  id           String     @id @default(cuid())
+  name         String
+  slug         String     @unique
+  description  String?
+  imageUrl     String?
+  displayOrder Int        @default(0)
+  parentId     String?
+  parent       Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children     Category[] @relation("SubCategories")
+  products     Product[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model Brand {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  logoUrl     String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Sale {
+  id                 String    @id @default(cuid())
+  title              String
+  slug               String    @unique
+  bannerText         String?
+  discountPercentage Float?
+  startDate          DateTime
+  endDate            DateTime
+  isActive           Boolean   @default(true)
+  products           Product[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  name           String
+  slug           String           @unique
+  description    String?
+  material       String?          // e.g. "Lawn", "Chiffon", "Silk", "Cotton"
+  gender         String           @default("WOMEN") // WOMEN | MEN | UNISEX
+  
+  // Public Pricing
+  retailPrice    Float
+  salePrice      Float?
+  
+  // Sensitive Supplier Information (STRICTLY INTERNAL / ADMIN ONLY)
+  wholesalePrice Float            // Purchase price from franchise/supplier
+  supplierNotes  String?          // Sourcing & internal notes
+  supplierBrand  String?          // Supplier original catalog name if different
+  
+  // Visibility & Catalog Drops
+  isFeatured     Boolean          @default(false)
+  isNewArrival   Boolean          @default(false) // Manual override flag
+  isPublished    Boolean          @default(true)
+  
+  // Relations
+  categoryId     String?
+  category       Category?        @relation(fields: [categoryId], references: [id])
+  brandId        String?
+  brand          Brand?           @relation(fields: [brandId], references: [id])
+  saleId         String?
+  sale           Sale?            @relation(fields: [saleId], references: [id])
+  
+  images         ProductImage[]
+  variants       ProductVariant[]
+  orderItems     OrderItem[]
+  wishlistItems  WishlistItem[]
+  
+  publishedAt    DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model CustomerUser {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  name            String
+  passwordHash    String
+  phone           String?
+  whatsapp        String?
+  deliveryAddress String?
+  karachiArea     String?
+  city            String         @default("Karachi")
+  wishlistItems   WishlistItem[]
+  orders          Order[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model WishlistItem {
+  id         String       @id @default(cuid())
+  customerId String
+  customer   CustomerUser @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now())
+
+  @@unique([customerId, productId])
+}
+
+model ProductImage {
+  id           String   @id @default(cuid())
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url          String
+  altText      String?
+  displayOrder Int      @default(0)
+  isThumbnail  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model ProductVariant {
+  id            String      @id @default(cuid())
+  productId     String
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size          String      // e.g., "XS", "S", "M", "L", "XL", "Unstitched"
+  color         String?     // e.g., "Midnight Black", "Emerald Green"
+  colorHex      String?     // e.g., "#121212"
+  stockQuantity Int         @default(10)
+  sku           String?
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  orderNumber      String        @unique // e.g. "LS-2026-1001"
+  
+  // Customer relation if logged in
+  customerId       String?
+  customer         CustomerUser? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  
+  // Customer Details
+  customerName     String
+  customerPhone    String
+  customerWhatsapp String?
+  deliveryAddress  String
+  karachiArea      String        // Extensible Karachi Area/Locality (e.g. DHA, Clifton, Gulshan, etc.)
+  city             String        @default("Karachi") // Fixed: Karachi only
+  
+  // Financials
+  subtotal         Float
+  deliveryFee      Float         @default(200.0) // Flat PKR 200 Karachi delivery
+  grandTotal       Float
+  
+  // Statuses
+  paymentMethod    String        @default("COD") // COD | BANK_TRANSFER
+  paymentStatus    String        @default("PENDING") // PENDING | VERIFIED | FAILED
+  orderStatus      String        @default("PENDING") // PENDING | CONFIRMED | PROCESSING | SHIPPED | DELIVERED | CANCELLED | RETURN_REQUESTED
+  
+  customerNotes    String?
+  paymentReference String?       // Transaction ID / Reference for Bank Transfer
+  internalNotes    String?       // Internal staff notes (ADMIN ONLY)
+  
+  items            OrderItem[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model OrderItem {
+  id          String          @id @default(cuid())
+  orderId     String
+  order       Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variantId   String?
+  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  
+  productName String
+  size        String
+  color       String?
+  unitPrice   Float
+  quantity    Int
+  totalPrice  Float
+  createdAt   DateTime        @default(now())
+}
+
+model Setting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
