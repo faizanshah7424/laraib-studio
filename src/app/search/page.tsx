@@ -50,19 +50,36 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
 
   if (!query) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
-        <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+      <div className="max-w-3xl mx-auto px-4 py-16 text-center space-y-8">
+        <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center text-brand-dark shadow-2xs">
           <SearchIcon className="h-8 w-8" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-3xl font-serif font-bold text-brand-dark">Search Laraib Studio</h1>
-          <p className="text-sm text-stone-500">
-            Type a product name, fabric material (e.g. Lawn, Raw Silk), category, or brand above to start searching.
+          <h1 className="text-3xl font-serif font-bold text-stone-900">Search Laraib Studio</h1>
+          <p className="text-xs sm:text-sm text-stone-500 max-w-md mx-auto">
+            Type a product name, fabric material (e.g. Lawn, Silk, Chiffon), category, or designer brand.
           </p>
         </div>
-        <div className="flex justify-center pt-4">
+
+        <form action="/search" method="GET" className="flex items-center gap-2 max-w-md mx-auto">
+          <div className="relative flex-1">
+            <SearchIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-stone-400" />
+            <input
+              type="text"
+              name="q"
+              placeholder="Search lawn, pret, kurtas..."
+              className="w-full text-xs pl-10 pr-4 py-3 bg-white border border-stone-300 rounded-xs focus:outline-none focus:border-stone-500"
+              autoFocus
+            />
+          </div>
+          <Button type="submit" variant="primary" size="md">
+            Search
+          </Button>
+        </form>
+
+        <div className="flex justify-center pt-2">
           <Link href="/collections">
-            <Button variant="primary">Explore All Collections</Button>
+            <Button variant="outline" size="sm">Explore All Collections</Button>
           </Link>
         </div>
       </div>

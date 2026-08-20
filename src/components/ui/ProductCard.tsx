@@ -101,7 +101,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
           {hasSale && (
             <Badge variant="sale" size="sm">
-              Sale
+              -{Math.round(((product.retailPrice - (product.salePrice || 0)) / product.retailPrice) * 100)}% OFF
             </Badge>
           )}
         </div>
