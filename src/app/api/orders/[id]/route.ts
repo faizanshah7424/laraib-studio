@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth/session';
 
+export const dynamic = 'force-dynamic';
+
 interface RouteParams {
   params: {
     id: string;

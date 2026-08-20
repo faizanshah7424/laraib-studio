@@ -5,6 +5,8 @@ import { verifyAdminToken } from '@/lib/auth/session';
 import { generateOrderNumber } from '@/lib/utils';
 import { KARACHI_DELIVERY_FEE } from '@/lib/constants';
 
+export const dynamic = 'force-dynamic';
+
 interface OrderItemInput {
   productId: string;
   variantId?: string;
