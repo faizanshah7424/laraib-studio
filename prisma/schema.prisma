@@ -1,5 +1,7 @@
 // Prisma Schema for Laraib Studio
-// Production-ready relational schema supporting SQLite (development) and PostgreSQL (production)
+// Relational schema supporting SQLite (development) and PostgreSQL (production hosting)
+// For Production PostgreSQL (Vercel Postgres, Neon, Supabase, Railway):
+// Simply update `provider = "postgresql"` below when connecting to a live PostgreSQL DATABASE_URL.
 
 generator client {
   provider = "prisma-client-js"
