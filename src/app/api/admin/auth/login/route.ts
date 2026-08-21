@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { verifyPassword, hashPassword, createAdminToken } from '@/lib/auth/session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const { email, password } = body;
 
-    if (!email || !password) {
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json(
         { error: 'Email and password are required' },
         { status: 400 }
@@ -15,6 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
 
     // Look up admin in database
     let admin = await prisma.adminUser.findFirst({
@@ -26,12 +29,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // If no admin in DB, check against configured DEFAULT_ADMIN_EMAIL / DEFAULT_ADMIN_PASSWORD from env
-    const defaultAdminEmail = (process.env.DEFAULT_ADMIN_EMAIL || 'admin@laraibstudio.pk').trim().toLowerCase();
-    const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'LaraibAdmin2026!#';
+    // Extract default admin credentials from environment safely
+    const rawEnvEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@laraibstudio.pk';
+    const rawEnvPassword = process.env.DEFAULT_ADMIN_PASSWORD || 'LaraibAdmin2026!#';
 
+    const defaultAdminEmail = rawEnvEmail.trim().toLowerCase().replace(/^["']|["']$/g, '');
+    const defaultAdminPassword = rawEnvPassword.trim().replace(/^["']|["']$/g, '');
+
+    // Auto-create default admin in database if table is empty or email matches env
     if (!admin && cleanEmail === defaultAdminEmail) {
-      if (password === defaultAdminPassword) {
+      if (cleanPassword === defaultAdminPassword) {
         const passwordHash = await hashPassword(defaultAdminPassword);
         admin = await prisma.adminUser.create({
           data: {
@@ -51,11 +58,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify password
-    let isValid = await verifyPassword(password, admin.passwordHash);
+    // Verify password against stored hash
+    let isValid = await verifyPassword(cleanPassword, admin.passwordHash);
 
-    // Fallback: If DB had an older hash or password was updated in env vars for default admin
-    if (!isValid && admin.email.toLowerCase() === defaultAdminEmail && password === defaultAdminPassword) {
+    // Fallback: If DB had an older seed hash or env password was updated
+    if (
+      !isValid &&
+      (admin.email.toLowerCase() === defaultAdminEmail || cleanEmail === defaultAdminEmail) &&
+      cleanPassword === defaultAdminPassword
+    ) {
       const newHash = await hashPassword(defaultAdminPassword);
       await prisma.adminUser.update({
         where: { id: admin.id },
@@ -78,6 +89,8 @@ export async function POST(req: NextRequest) {
       role: admin.role,
     });
 
+    const isProd = process.env.NODE_ENV === 'production';
+
     const response = NextResponse.json({
       success: true,
       message: 'Admin authenticated successfully',
@@ -91,15 +104,18 @@ export async function POST(req: NextRequest) {
 
     response.cookies.set('admin_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isProd,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/',
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Admin login error:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Server error during authentication. Please try again.' },
+      { status: 500 }
+    );
   }
 }
