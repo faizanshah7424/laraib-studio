@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatPKR, getWhatsAppUrl } from '@/lib/utils';
 import {
   Search,
@@ -22,6 +23,7 @@ import {
 import { Button } from '@/components/ui/Button';
 
 export default function AdminOrdersListPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -49,6 +51,10 @@ export default function AdminOrdersListPage() {
       });
 
       const res = await fetch(`/api/orders?${queryParams.toString()}`);
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
 
       if (data.orders) {

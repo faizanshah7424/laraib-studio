@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { STORE_NAME } from '@/lib/constants';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Lock, ShieldAlert, ArrowRight, UserCheck } from 'lucide-react';
+import { Lock, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -20,18 +20,23 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // Phase 1 preview demonstration for staff login
-      if (email.trim() && password.trim()) {
-        setTimeout(() => {
-          setIsLoading(false);
-          router.push('/admin');
-        }, 600);
-      } else {
-        setError('Please enter your administrator email and password.');
-        setIsLoading(false);
+      const res = await fetch('/api/admin/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Authentication failed');
       }
-    } catch (err) {
-      setError('An error occurred during authentication.');
+
+      router.push('/admin');
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during authentication.');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -63,7 +68,7 @@ export default function AdminLoginPage() {
             label="Staff Email"
             type="email"
             required
-            placeholder="admin@laraibstudio.pk"
+            placeholder="admin@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -88,12 +93,6 @@ export default function AdminLoginPage() {
             Sign In to Staff Panel
           </Button>
         </form>
-
-        <div className="p-3 bg-stone-50 border border-stone-200 rounded-xs text-[11px] text-stone-500 text-center">
-          <p className="font-medium text-stone-700">Default Seed Credentials:</p>
-          <p>Email: <code>admin@laraibstudio.pk</code></p>
-          <p>Password: <code>LaraibAdmin2026!#</code></p>
-        </div>
       </div>
     </div>
   );

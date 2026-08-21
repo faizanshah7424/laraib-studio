@@ -1,6 +1,13 @@
 import React from 'react';
 import { Metadata } from 'next';
-import { STORE_NAME, OFFICIAL_WHATSAPP_NUMBER, KARACHI_DELIVERY_FEE } from '@/lib/constants';
+import {
+  STORE_NAME,
+  OFFICIAL_EMAIL,
+  OFFICIAL_PHONE,
+  OFFICIAL_WHATSAPP_DISPLAY,
+  OFFICIAL_WHATSAPP_NUMBER,
+  KARACHI_DELIVERY_FEE,
+} from '@/lib/constants';
 import { getWhatsAppUrl } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { MessageCircle, MapPin, Clock, Phone, Mail } from 'lucide-react';
@@ -40,7 +47,7 @@ export default function ContactPage() {
               Our official WhatsApp concierge is the fastest way to get real-time stock confirmations, custom sizing advice, or submit exchange queries.
             </p>
             <div className="p-3 bg-stone-50 border border-stone-200 rounded-sm text-xs space-y-1 text-stone-700">
-              <p><strong>Official Number:</strong> {OFFICIAL_WHATSAPP_NUMBER}</p>
+              <p><strong>Phone / WhatsApp:</strong> {OFFICIAL_WHATSAPP_DISPLAY}</p>
               <p><strong>Operating Hours:</strong> 10:00 AM – 10:00 PM (Mon – Sun)</p>
             </div>
           </div>
@@ -86,10 +93,22 @@ export default function ContactPage() {
             </div>
 
             <div className="flex items-start gap-3">
+              <Phone className="h-4 w-4 text-brand-accent shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-stone-900">Phone / WhatsApp</p>
+                <p>{OFFICIAL_PHONE}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
               <Mail className="h-4 w-4 text-brand-accent shrink-0 mt-0.5" />
               <div>
                 <p className="font-bold text-stone-900">Email Inquiries</p>
-                <p>support@laraibstudio.pk</p>
+                <p>
+                  <a href={`mailto:${OFFICIAL_EMAIL}`} className="hover:underline text-stone-800">
+                    {OFFICIAL_EMAIL}
+                  </a>
+                </p>
               </div>
             </div>
           </div>

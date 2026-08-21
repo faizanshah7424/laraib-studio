@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth/session';
+import { getCustomerSession } from '@/lib/auth/customerSession';
 import { generateOrderNumber } from '@/lib/utils';
 import { KARACHI_DELIVERY_FEE } from '@/lib/constants';
 
@@ -39,15 +40,14 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20', 10);
     const skip = (page - 1) * limit;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
 
     if (search) {
       where.OR = [
-        { orderNumber: { contains: search } },
-        { customerName: { contains: search } },
-        { customerPhone: { contains: search } },
-        { karachiArea: { contains: search } },
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { customerName: { contains: search, mode: 'insensitive' } },
+        { customerPhone: { contains: search, mode: 'insensitive' } },
+        { karachiArea: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -132,6 +132,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 });
     }
 
+    // Check if customer is authenticated
+    const customerSession = await getCustomerSession();
+    const customerId = customerSession?.userId || null;
+
     // 4. Server-Side Price & Stock Recalculation (NEVER TRUST BROWSER PRICES)
     let calculatedSubtotal = 0;
     const preparedOrderItems: {
@@ -145,7 +149,7 @@ export async function POST(req: NextRequest) {
       totalPrice: number;
     }[] = [];
 
-    const variantStockUpdates: { variantId: string; newStock: number }[] = [];
+    const variantQuantityMap = new Map<string, number>();
 
     for (const item of items as OrderItemInput[]) {
       if (!item.productId || !item.quantity || item.quantity <= 0) {
@@ -206,10 +210,10 @@ export async function POST(req: NextRequest) {
       });
 
       if (dbVariant) {
-        variantStockUpdates.push({
-          variantId: dbVariant.id,
-          newStock: dbVariant.stockQuantity - item.quantity,
-        });
+        variantQuantityMap.set(
+          dbVariant.id,
+          (variantQuantityMap.get(dbVariant.id) || 0) + item.quantity
+        );
       }
     }
 
@@ -220,12 +224,13 @@ export async function POST(req: NextRequest) {
     // 6. Generate Human-Readable Unique Order Number
     const orderNumber = generateOrderNumber();
 
-    // 7. Atomic Transaction: Create Order & Update Stock
+    // 7. Atomic Transaction: Create Order & Update Stock Atomically
     const newOrder = await prisma.$transaction(async (tx) => {
       // Create Order
       const createdOrder = await tx.order.create({
         data: {
           orderNumber,
+          customerId,
           customerName: customerName.trim(),
           customerPhone: customerPhone.trim(),
           customerWhatsapp: customerWhatsapp ? customerWhatsapp.trim() : customerPhone.trim(),
@@ -249,11 +254,15 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Update variant stocks
-      for (const update of variantStockUpdates) {
+      // Atomically decrement variant stock
+      for (const [variantId, qty] of variantQuantityMap.entries()) {
         await tx.productVariant.update({
-          where: { id: update.variantId },
-          data: { stockQuantity: Math.max(0, update.newStock) },
+          where: { id: variantId },
+          data: {
+            stockQuantity: {
+              decrement: qty,
+            },
+          },
         });
       }
 

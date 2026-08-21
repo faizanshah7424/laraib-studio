@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatPKR } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import {
@@ -21,9 +22,11 @@ import {
   Percent,
   Users,
   RefreshCw,
+  LogOut,
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'today' | 'sevenDays' | 'thirtyDays'>('sevenDays');
@@ -32,6 +35,10 @@ export default function AdminDashboardPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/dashboard');
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const json = await res.json();
       if (json.overview) {
         setData(json);
@@ -46,6 +53,15 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      router.push('/admin/login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
 
   const currentPeriodMetrics = data?.timePeriods ? data.timePeriods[period] : { count: 0, revenue: 0, estimatedProfit: 0 };
 
@@ -79,6 +95,14 @@ export default function AdminDashboardPage() {
               <span>Rapid Product Drop</span>
             </Button>
           </Link>
+          <button
+            onClick={handleSignOut}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-white border border-stone-200 hover:border-red-300 hover:text-red-700 rounded-xs transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline">Sign Out</span>
+          </button>
         </div>
       </div>
 

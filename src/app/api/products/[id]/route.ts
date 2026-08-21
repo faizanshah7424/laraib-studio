@@ -122,7 +122,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const preparedImages = images.map((img: any, index: number) => ({
       url: typeof img === 'string' ? img : img.url,
       altText: img.altText || name || existingProduct.name,
@@ -130,7 +129,6 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       isThumbnail: index === 0 || Boolean(img.isThumbnail),
     }));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const preparedVariants = variants.map((v: any) => ({
       size: v.size || 'Unstitched',
       color: v.color || null,

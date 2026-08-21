@@ -18,9 +18,17 @@ export function formatPKR(amount: number): string {
 
 /**
  * Clean and format phone number for WhatsApp link
+ * Converts local PK 03XXXXXXXXX to international 923XXXXXXXXX
  */
 export function sanitizePhoneNumber(phone: string): string {
-  return phone.replace(/[^0-9]/g, '');
+  const digits = phone.replace(/[^0-9]/g, '');
+  if (digits.startsWith('03') && digits.length === 11) {
+    return '92' + digits.slice(1);
+  }
+  if (digits.startsWith('3') && digits.length === 10) {
+    return '92' + digits;
+  }
+  return digits;
 }
 
 /**

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/context/CartContext';
+import { useCustomerAuth } from '@/context/CustomerAuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
@@ -26,6 +27,7 @@ import {
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, subtotal, deliveryFee, grandTotal, clearCart, closeCart } = useCart();
+  const { customer } = useCustomerAuth();
 
   // Form Fields
   const [customerName, setCustomerName] = useState('');
@@ -35,6 +37,17 @@ export default function CheckoutPage() {
   const [karachiArea, setKarachiArea] = useState('');
   const [customArea, setCustomArea] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
+
+  // Auto-fill from logged-in customer profile
+  useEffect(() => {
+    if (customer) {
+      if (customer.name) setCustomerName((prev) => prev || customer.name || '');
+      if (customer.phone) setCustomerPhone((prev) => prev || customer.phone || '');
+      if (customer.whatsapp) setCustomerWhatsapp((prev) => prev || customer.whatsapp || '');
+      if (customer.deliveryAddress) setDeliveryAddress((prev) => prev || customer.deliveryAddress || '');
+      if (customer.karachiArea) setKarachiArea((prev) => prev || customer.karachiArea || '');
+    }
+  }, [customer]);
 
   // Payment Method State
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'BANK_TRANSFER'>('COD');

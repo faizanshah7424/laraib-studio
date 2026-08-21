@@ -58,7 +58,6 @@ export async function getPublicProducts(
 
   try {
     // Build Prisma Where Clause
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {
       isPublished: true,
     };
@@ -130,11 +129,11 @@ export async function getPublicProducts(
     if (options.searchQuery && options.searchQuery.trim() !== '') {
       const term = options.searchQuery.trim();
       const searchConditions = [
-        { name: { contains: term } },
-        { description: { contains: term } },
-        { material: { contains: term } },
-        { category: { name: { contains: term } } },
-        { brand: { name: { contains: term } } },
+        { name: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { material: { contains: term, mode: 'insensitive' } },
+        { category: { name: { contains: term, mode: 'insensitive' } } },
+        { brand: { name: { contains: term, mode: 'insensitive' } } },
       ];
 
       if (where.AND) {
@@ -168,7 +167,6 @@ export async function getPublicProducts(
     }
 
     // Build OrderBy
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let orderBy: any = { publishedAt: 'desc' };
     if (options.sortBy === 'price-asc') {
       orderBy = { retailPrice: 'asc' };
@@ -257,7 +255,6 @@ export async function getRelatedProducts(
 ): Promise<PublicProduct[]> {
   try {
     const newArrivalDays = await getNewArrivalDurationDays();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const orConditions: any[] = [];
     if (categoryId) orConditions.push({ categoryId });
     if (brandId) orConditions.push({ brandId });

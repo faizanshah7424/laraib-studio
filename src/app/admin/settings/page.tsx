@@ -1,14 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Save, AlertCircle, CheckCircle2, Building2, Sliders, MessageCircle, Truck } from 'lucide-react';
 
 export default function AdminSettingsPage() {
+  const router = useRouter();
   const [storeName, setStoreName] = useState('Laraib Studio');
-  const [whatsappNumber, setWhatsappNumber] = useState('+923001234567');
+  const [whatsappNumber, setWhatsappNumber] = useState('03702393767');
   const [karachiDeliveryFee, setKarachiDeliveryFee] = useState('200');
   const [newArrivalDays, setNewArrivalDays] = useState('14');
   const [announcementText, setAnnouncementText] = useState(
@@ -77,6 +79,10 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings: settingsPayload }),
       });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
 
       if (!res.ok || data.error) {

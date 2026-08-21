@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { formatPKR } from '@/lib/utils';
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminProductsListPage() {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,6 +41,10 @@ export default function AdminProductsListPage() {
       });
 
       const res = await fetch(`/api/products?${queryParams.toString()}`);
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
 
       if (data.products) {

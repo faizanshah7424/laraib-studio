@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatPKR, getWhatsAppUrl } from '@/lib/utils';
 import { Search, Users, MessageCircle, ArrowLeft, Eye, RefreshCw, X, MapPin, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function AdminCustomersPage() {
+  const router = useRouter();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,6 +19,10 @@ export default function AdminCustomersPage() {
     try {
       const queryParams = new URLSearchParams({ search });
       const res = await fetch(`/api/admin/customers?${queryParams.toString()}`);
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (data.customers) setCustomers(data.customers);
     } catch (err) {

@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatPKR } from '@/lib/utils';
 import { Search, AlertTriangle, Save, RefreshCw, ArrowLeft, Filter, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 
 export default function AdminInventoryPage() {
+  const router = useRouter();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -24,6 +26,10 @@ export default function AdminInventoryPage() {
       });
 
       const res = await fetch(`/api/admin/inventory?${queryParams.toString()}`);
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (data.inventory) {
         setItems(data.inventory);

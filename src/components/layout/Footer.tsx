@@ -1,8 +1,15 @@
 import React from 'react';
 import Link from 'next/link';
-import { STORE_NAME, KARACHI_DELIVERY_FEE, RETURN_POLICY_DAYS } from '@/lib/constants';
+import {
+  STORE_NAME,
+  KARACHI_DELIVERY_FEE,
+  RETURN_POLICY_DAYS,
+  OFFICIAL_EMAIL,
+  OFFICIAL_PHONE,
+  OFFICIAL_WHATSAPP_DISPLAY,
+} from '@/lib/constants';
 import { getWhatsAppUrl } from '@/lib/utils';
-import { MessageCircle, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
+import { MessageCircle, ShieldCheck, Truck, RotateCcw, Mail, Phone } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -68,6 +75,18 @@ export const Footer: React.FC = () => {
             <p className="text-xs text-stone-400 leading-relaxed">
               Karachi’s destination for everyday luxury, latest seasonal drops, and unstitched & pret fashion collections.
             </p>
+            <div className="space-y-1.5 text-xs text-stone-400">
+              <p className="flex items-center gap-2">
+                <Phone className="h-3.5 w-3.5 text-brand-accent shrink-0" />
+                <span>{OFFICIAL_PHONE}</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-brand-accent shrink-0" />
+                <a href={`mailto:${OFFICIAL_EMAIL}`} className="hover:text-white transition-colors">
+                  {OFFICIAL_EMAIL}
+                </a>
+              </p>
+            </div>
             <div className="pt-2">
               <a
                 href={getWhatsAppUrl('Hi Laraib Studio, I would like to make an inquiry.')}
@@ -127,13 +146,13 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
-                <Link href="/order-tracking" className="hover:text-white transition-colors">
-                  Track Your Order
+                <Link href="/account/orders" className="hover:text-white transition-colors">
+                  My Order History
                 </Link>
               </li>
               <li>
-                <Link href="/pages/faqs" className="hover:text-white transition-colors">
-                  Frequently Asked Questions
+                <Link href="/pages/contact" className="hover:text-white transition-colors">
+                  Contact & WhatsApp Support
                 </Link>
               </li>
             </ul>

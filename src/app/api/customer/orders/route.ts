@@ -23,14 +23,18 @@ export async function GET() {
       return NextResponse.json({ orders: [] });
     }
 
-    // Match by customerId OR customer phone/email
+    // Match by customerId OR customer phone/whatsapp if present
+    const orConditions: any[] = [{ customerId: customer.id }];
+    if (customer.phone && customer.phone.trim() !== '') {
+      orConditions.push({ customerPhone: customer.phone.trim() });
+    }
+    if (customer.whatsapp && customer.whatsapp.trim() !== '') {
+      orConditions.push({ customerWhatsapp: customer.whatsapp.trim() });
+    }
+
     const orders = await prisma.order.findMany({
       where: {
-        OR: [
-          { customerId: customer.id },
-          { customerPhone: customer.phone || 'NO_MATCH' },
-          { customerWhatsapp: customer.whatsapp || 'NO_MATCH' },
-        ],
+        OR: orConditions,
       },
       orderBy: { createdAt: 'desc' },
       select: {

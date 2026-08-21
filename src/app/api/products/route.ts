@@ -26,14 +26,13 @@ export async function GET(req: NextRequest) {
       const brandId = searchParams.get('brandId') || '';
       const skip = (page - 1) * limit;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const where: any = {};
       if (search) {
         where.OR = [
-          { name: { contains: search } },
-          { description: { contains: search } },
-          { supplierNotes: { contains: search } },
-          { supplierBrand: { contains: search } },
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { supplierNotes: { contains: search, mode: 'insensitive' } },
+          { supplierBrand: { contains: search, mode: 'insensitive' } },
         ];
       }
       if (categoryId) where.categoryId = categoryId;
@@ -204,7 +203,6 @@ export async function POST(req: NextRequest) {
     }
 
     // Process Images
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const preparedImages = images.map((img: any, index: number) => ({
       url: typeof img === 'string' ? img : img.url,
       altText: img.altText || name,
@@ -213,9 +211,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Process Variants
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const preparedVariants = variants.length > 0
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ? variants.map((v: any) => ({
           size: v.size || 'Unstitched',
           color: v.color || null,

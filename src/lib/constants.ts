@@ -2,7 +2,12 @@
 
 export const STORE_NAME = 'Laraib Studio';
 export const STORE_TAGLINE = 'Curated Pakistani Fashion & Daily Drops';
-export const OFFICIAL_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+923001234567';
+
+// Official Contact Information
+export const OFFICIAL_EMAIL = 'laraibfashionstudio@gmail.com';
+export const OFFICIAL_PHONE = '03702393767';
+export const OFFICIAL_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '923702393767';
+export const OFFICIAL_WHATSAPP_DISPLAY = '03702393767';
 
 // Delivery Configuration (Strictly Karachi Only)
 export const DELIVERY_CITY = 'Karachi';

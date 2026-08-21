@@ -15,7 +15,7 @@ async function main() {
     },
     {
       key: 'whatsapp_number',
-      value: '+923001234567',
+      value: '03702393767',
       description: 'Official WhatsApp support and ordering phone number',
     },
     {
