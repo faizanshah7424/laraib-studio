@@ -26,9 +26,16 @@ export async function GET() {
         role: true,
         createdAt: true,
       },
-    });
+    }).catch(() => null);
 
-    return NextResponse.json({ admin });
+    return NextResponse.json({
+      admin: admin || {
+        id: session.userId,
+        name: session.name,
+        email: session.email,
+        role: session.role,
+      },
+    });
   } catch (error) {
     console.error('Error fetching admin session:', error);
     return NextResponse.json({ error: 'Failed to fetch admin session' }, { status: 500 });

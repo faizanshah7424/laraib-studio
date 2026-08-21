@@ -4,6 +4,39 @@ import { verifyPassword, hashPassword, createAdminToken } from '@/lib/auth/sessi
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Robust admin user lookup with retry logic for Neon PostgreSQL cold-start wake-up
+ */
+async function findAdminWithRetry(email: string, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 1. Try findUnique by email
+      const admin = await prisma.adminUser.findUnique({
+        where: { email },
+      });
+      if (admin) return admin;
+
+      // 2. Fallback to case-insensitive findFirst
+      return await prisma.adminUser.findFirst({
+        where: {
+          email: {
+            equals: email,
+            mode: 'insensitive',
+          },
+        },
+      });
+    } catch (err: any) {
+      console.warn(`Prisma admin query attempt ${attempt} warning:`, err?.message || err);
+      if (attempt === maxRetries) {
+        throw err;
+      }
+      // Wait 500ms before retrying in case database compute is waking up
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
@@ -19,15 +52,8 @@ export async function POST(req: NextRequest) {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // Look up admin in database
-    let admin = await prisma.adminUser.findFirst({
-      where: {
-        email: {
-          equals: cleanEmail,
-          mode: 'insensitive',
-        },
-      },
-    });
+    // Look up admin in database with cold-start retry
+    let admin = await findAdminWithRetry(cleanEmail);
 
     // Extract default admin credentials from environment safely
     const rawEnvEmail = process.env.DEFAULT_ADMIN_EMAIL || 'admin@laraibstudio.pk';
@@ -36,12 +62,14 @@ export async function POST(req: NextRequest) {
     const defaultAdminEmail = rawEnvEmail.trim().toLowerCase().replace(/^["']|["']$/g, '');
     const defaultAdminPassword = rawEnvPassword.trim().replace(/^["']|["']$/g, '');
 
-    // Auto-create default admin in database if table is empty or email matches env
+    // Auto-create default admin in database if not found and credentials match
     if (!admin && cleanEmail === defaultAdminEmail) {
       if (cleanPassword === defaultAdminPassword) {
         const passwordHash = await hashPassword(defaultAdminPassword);
-        admin = await prisma.adminUser.create({
-          data: {
+        admin = await prisma.adminUser.upsert({
+          where: { email: defaultAdminEmail },
+          update: { passwordHash, name: 'Laraib Studio Admin', role: 'SUPER_ADMIN' },
+          create: {
             email: defaultAdminEmail,
             name: 'Laraib Studio Admin',
             passwordHash,
@@ -112,7 +140,7 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('Admin login error:', error);
+    console.error('Admin login error:', error?.message || error);
     return NextResponse.json(
       { error: 'Server error during authentication. Please try again.' },
       { status: 500 }
