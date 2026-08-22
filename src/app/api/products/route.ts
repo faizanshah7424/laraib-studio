@@ -202,13 +202,15 @@ export async function POST(req: NextRequest) {
       finalSlug = `${baseSlug}-${count++}`;
     }
 
-    // Process Images
+    // Process Images with accurate primary cover thumbnail selection
+    const hasExplicitThumbnail = images.some((img: any) => Boolean(img.isThumbnail));
     const preparedImages = images.map((img: any, index: number) => ({
       url: typeof img === 'string' ? img : img.url,
       altText: img.altText || name,
       displayOrder: index + 1,
-      isThumbnail: index === 0 || Boolean(img.isThumbnail),
+      isThumbnail: hasExplicitThumbnail ? Boolean(img.isThumbnail) : index === 0,
     }));
+
 
     // Process Variants
     const preparedVariants = variants.length > 0

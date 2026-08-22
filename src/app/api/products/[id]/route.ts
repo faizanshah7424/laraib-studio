@@ -122,12 +122,14 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       await prisma.productVariant.deleteMany({ where: { productId: id } });
     }
 
+    const hasExplicitThumbnail = images.some((img: any) => Boolean(img.isThumbnail));
     const preparedImages = images.map((img: any, index: number) => ({
       url: typeof img === 'string' ? img : img.url,
       altText: img.altText || name || existingProduct.name,
       displayOrder: index + 1,
-      isThumbnail: index === 0 || Boolean(img.isThumbnail),
+      isThumbnail: hasExplicitThumbnail ? Boolean(img.isThumbnail) : index === 0,
     }));
+
 
     const preparedVariants = variants.map((v: any) => ({
       size: v.size || 'Unstitched',
