@@ -23,11 +23,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Validate Vercel Blob token configuration
-    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    const rawBlobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    const blobToken = rawBlobToken ? rawBlobToken.trim().replace(/^["']|["']$/g, '') : undefined;
     if (!blobToken) {
       console.error('[Upload Error] BLOB_READ_WRITE_TOKEN environment variable is not configured.');
       return NextResponse.json(
-        { error: 'Vercel Blob Storage is not configured. BLOB_READ_WRITE_TOKEN is missing.' },
+        { error: 'Vercel Blob Storage is not configured. BLOB_READ_WRITE_TOKEN is missing in Vercel environment variables.' },
         { status: 500 }
       );
     }
@@ -130,11 +131,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 400 });
   } catch (error: any) {
     const errCode = error?.code || error?.name || 'UPLOAD_ERROR';
-    console.error(`[Image Upload] Upload failed on server (Code: ${errCode})`);
+    const errorMsg = error?.message || 'Image upload failed on server.';
+    console.error(`[Image Upload] Upload failed on server (Code: ${errCode}):`, errorMsg);
     return NextResponse.json(
-      { error: 'Image upload failed on server. Please try again.' },
+      { error: errorMsg },
       { status: 500 }
     );
   }
 }
+
 
