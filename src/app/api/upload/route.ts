@@ -71,11 +71,26 @@ export async function POST(req: NextRequest) {
         .toLowerCase() || 'product';
       const fileName = `products/${Date.now()}-${cleanName}${ext}`;
 
-      // Upload directly to Vercel Blob Storage
-      const blob = await put(fileName, file, {
-        access: 'public',
-        token: blobToken,
-      });
+      // Upload to Vercel Blob Storage (try public access, fallback to private if store is private)
+      let blob;
+      try {
+        blob = await put(fileName, file, {
+          access: 'public',
+          token: blobToken,
+        });
+      } catch (putErr: any) {
+        if (
+          putErr?.message?.includes('private store') ||
+          putErr?.message?.includes('Cannot use public access on a private store')
+        ) {
+          blob = await put(fileName, file, {
+            access: 'private',
+            token: blobToken,
+          });
+        } else {
+          throw putErr;
+        }
+      }
 
       return NextResponse.json({
         success: true,
@@ -115,11 +130,27 @@ export async function POST(req: NextRequest) {
       const ext = mimeType.includes('png') ? '.png' : mimeType.includes('webp') ? '.webp' : '.jpg';
       const fileName = `products/${Date.now()}-whatsapp-upload${ext}`;
 
-      const blob = await put(fileName, buffer, {
-        access: 'public',
-        contentType: mimeType,
-        token: blobToken,
-      });
+      let blob;
+      try {
+        blob = await put(fileName, buffer, {
+          access: 'public',
+          contentType: mimeType,
+          token: blobToken,
+        });
+      } catch (putErr: any) {
+        if (
+          putErr?.message?.includes('private store') ||
+          putErr?.message?.includes('Cannot use public access on a private store')
+        ) {
+          blob = await put(fileName, buffer, {
+            access: 'private',
+            contentType: mimeType,
+            token: blobToken,
+          });
+        } else {
+          throw putErr;
+        }
+      }
 
       return NextResponse.json({
         success: true,
@@ -127,6 +158,7 @@ export async function POST(req: NextRequest) {
         fileName: blob.pathname,
       });
     }
+
 
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 400 });
   } catch (error: any) {
