@@ -45,7 +45,9 @@ export const AdminImageUploader: React.FC<AdminImageUploaderProps> = ({
         });
 
         if (!res.ok) {
-          throw new Error(`Upload failed for file ${file.name}`);
+          const errData = await res.json().catch(() => ({}));
+          const message = errData.error || (res.status === 401 ? 'Session expired. Please log in again.' : `Upload failed for file ${file.name}`);
+          throw new Error(message);
         }
 
         const data = await res.json();
@@ -56,6 +58,7 @@ export const AdminImageUploader: React.FC<AdminImageUploaderProps> = ({
             isThumbnail: newImages.length === 0,
           });
         }
+
       }
 
       onChange(newImages);
