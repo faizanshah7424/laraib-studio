@@ -92,9 +92,13 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const isPrivateBlob = blob.url.includes('.private.blob.vercel-storage.com');
+      const publicUrl = isPrivateBlob ? `/api/blob?url=${encodeURIComponent(blob.url)}` : blob.url;
+
       return NextResponse.json({
         success: true,
-        url: blob.url,
+        url: publicUrl,
+        rawBlobUrl: blob.url,
         fileName: blob.pathname,
       });
     }
@@ -152,12 +156,17 @@ export async function POST(req: NextRequest) {
         }
       }
 
+      const isPrivateBlob = blob.url.includes('.private.blob.vercel-storage.com');
+      const publicUrl = isPrivateBlob ? `/api/blob?url=${encodeURIComponent(blob.url)}` : blob.url;
+
       return NextResponse.json({
         success: true,
-        url: blob.url,
+        url: publicUrl,
+        rawBlobUrl: blob.url,
         fileName: blob.pathname,
       });
     }
+
 
 
     return NextResponse.json({ error: 'Unsupported Content-Type' }, { status: 400 });
