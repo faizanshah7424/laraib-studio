@@ -4,11 +4,48 @@ import { verifyPassword, hashPassword, createAdminToken } from '@/lib/auth/sessi
 
 export const dynamic = 'force-dynamic';
 
+const RETRY_DELAYS = [0, 500, 1200, 2500];
+
 /**
- * Robust admin user lookup with retry logic for Neon PostgreSQL cold-start wake-up
+ * Determine if a database error is a transient connection/cold-start issue that should be retried.
  */
-async function findAdminWithRetry(email: string, maxRetries = 3) {
+function isTransientDbError(err: any): boolean {
+  if (!err) return false;
+
+  const code = err.code || err.name || '';
+  const transientCodes = ['P1001', 'P1002', 'P1008', 'P1011', 'P1017', 'P2024'];
+  if (transientCodes.includes(code)) return true;
+
+  if (err.name === 'PrismaClientInitializationError') return true;
+
+  const msg = (err.message || '').toLowerCase();
+  if (
+    msg.includes('reach database') ||
+    msg.includes('timed out') ||
+    msg.includes('timeout') ||
+    msg.includes('connection closed') ||
+    msg.includes('connection reset') ||
+    msg.includes('econnreset') ||
+    msg.includes('etimedout') ||
+    msg.includes('econnrefused') ||
+    msg.includes('pool')
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Admin user lookup with 4-attempt exponential backoff retry for Neon PostgreSQL cold-starts
+ */
+async function findAdminWithRetry(email: string, maxRetries = 4) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    const delay = RETRY_DELAYS[attempt - 1] || 2500;
+    if (delay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
     try {
       // 1. Try findUnique by email
       const admin = await prisma.adminUser.findUnique({
@@ -26,16 +63,20 @@ async function findAdminWithRetry(email: string, maxRetries = 3) {
         },
       });
     } catch (err: any) {
-      console.warn(`Prisma admin query attempt ${attempt} warning:`, err?.message || err);
-      if (attempt === maxRetries) {
+      const isTransient = isTransientDbError(err);
+      const errCode = err?.code || err?.name || 'DB_ERROR';
+
+      // Safe server-side logging: Log error code/category and attempt count only (no secrets/credentials)
+      console.warn(`[DB Auth] Connection attempt ${attempt}/${maxRetries} failed (Code: ${errCode}, Transient: ${isTransient})`);
+
+      if (!isTransient || attempt === maxRetries) {
         throw err;
       }
-      // Wait 500ms before retrying in case database compute is waking up
-      await new Promise((resolve) => setTimeout(resolve, 500));
     }
   }
   return null;
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -140,10 +181,12 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('Admin login error:', error?.message || error);
+    const errCode = error?.code || error?.name || 'SERVER_AUTH_ERROR';
+    console.error(`[Admin Auth] Authentication error encountered (Code: ${errCode})`);
     return NextResponse.json(
       { error: 'Server error during authentication. Please try again.' },
       { status: 500 }
     );
   }
 }
+
